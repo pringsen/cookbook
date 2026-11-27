@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Cookbooks{% endblock %}
+{% block content %}
+<h1>Cookbooks</h1>
+<p class="muted">Group recipes any way you like: “Weeknight dinners”, “Grandma's recipes”, “Christmas baking”. A recipe can be in several cookbooks.</p>
+{% if books %}
+<div class="books">
+  {% for b in books %}
+  <a class="book" href="/cookbooks/{{ b.id }}" style="--c: {{ b.color }}">
+    <span class="spine"></span>
+    <strong>{{ b.name }}</strong>
+    <small>{{ b.recipes|length }} recipe{{ 's' if b.recipes|length != 1 }}</small>
+    {% if b.description %}<p>{{ b.description }}</p>{% endif %}
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+<details class="panel" {{ 'open' if not books }}>
+  <summary>New cookbook</summary>
+  <form method="post" action="/cookbooks/new" class="stack">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="row">
+      <label class="grow">Name <input name="name" required placeholder="e.g. Weeknight dinners"></label>
+      <label>Colour <input type="color" name="color" value="#c2410c"></label>
+    </div>
+    <label>Description <input name="description" placeholder="optional"></label>
+    <button class="btn primary">Create</button>
+  </form>
+</details>
+{% endblock %}

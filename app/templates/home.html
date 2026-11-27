@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<h1>Hello, {{ user.name }}</h1>
+<div class="stats">
+  <a href="/recipes"><b>{{ counts.recipes }}</b> recipes</a>
+  <a href="/cookbooks"><b>{{ counts.cookbooks }}</b> cookbooks</a>
+  <a href="/shopping"><b>{{ counts.shopping }}</b> to buy</a>
+</div>
+
+<section>
+  <div class="sechead"><h2>Next 7 days</h2><a href="/planner">Open planner →</a></div>
+  {% if plan %}
+  <ul class="planlist">
+    {% for e in plan %}
+    <li class="{{ 'done' if e.cooked }}"><span class="day">{{ 'Today' if e.day == today else e.day.strftime('%a %d') }}</span>
+      <span class="meal">{{ e.meal }}</span>
+      {% if e.recipe %}<a href="/recipes/{{ e.recipe.id }}">{{ e.label }}</a>{% else %}{{ e.label }}{% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty">Nothing planned yet. <a href="/planner">Plan your week</a>.</p>
+  {% endif %}
+</section>
+
+<section>
+  <div class="sechead"><h2>Recently added</h2><a href="/recipes?sort=new">All recipes →</a></div>
+  {% if recent %}
+  <div class="grid">{% for r in recent %}{% include "_card.html" %}{% endfor %}</div>
+  {% else %}
+  <div class="empty big">
+    <p>Your cookbook is empty.</p>
+    <a class="btn primary" href="/import">Add your first recipe</a>
+  </div>
+  {% endif %}
+</section>
+
+{% if cooked %}
+<section>
+  <div class="sechead"><h2>Recently cooked</h2><a href="/calendar">Calendar →</a></div>
+  <ul class="loglist">
+    {% for l in cooked %}
+    <li><span class="day">{{ l.cooked_on.strftime('%d %b') }}</span>
+      {% if l.recipe %}<a href="/recipes/{{ l.recipe.id }}">{{ l.label }}</a>{% else %}{{ l.label }}{% endif %}
+      {% if l.guests %}<span class="muted">for {{ l.guests }}</span>{% endif %}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

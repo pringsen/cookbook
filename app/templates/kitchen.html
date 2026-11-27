@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Kitchen{% endblock %}
+{% block head %}{% if refresh %}<meta http-equiv="refresh" content="{{ refresh }}">{% endif %}{% endblock %}
+{% block mainclass %}kitchen{% endblock %}
+{% block content %}
+<header class="kitchenhead">
+  <h1>{{ now.strftime('%A, %d %B') }}</h1>
+  <span class="muted">Updated {{ now.strftime('%H:%M') }}{% if signed_in %} · <a href="/">Back to the app</a>{% endif %}</span>
+</header>
+<div class="kitchengrid">
+  <section>
+    <h2>Meals</h2>
+    <div class="kdays">
+    {% for d, entries in by_day.items() %}
+    <div class="kday">
+      <h3>{{ 'Today' if d == today else ('Tomorrow' if (d - today).days == 1 else d.strftime('%A')) }}</h3>
+      {% for e in entries %}
+      <p class="{{ 'done' if e.cooked }}"><span class="meal">{{ e.meal }}</span>
+        {% if e.recipe and signed_in %}<a href="/recipes/{{ e.recipe.id }}/cook{{ '?servings=%d' % e.servings if e.servings }}">{{ e.label }}</a>{% else %}{{ e.label }}{% endif %}</p>
+      {% else %}<p class="muted">Nothing planned</p>{% endfor %}
+    </div>
+    {% endfor %}
+    </div>
+  </section>
+  <section>
+    <h2>Shopping list <small>({{ items|length }})</small></h2>
+    {% if items %}
+    <ul class="kshop">{% for i in items %}<li>☐ <b>{{ amount(i.quantity, i.unit) }}</b> {{ i.name }}</li>{% endfor %}</ul>
+    {% else %}<p class="muted">Nothing to buy.</p>{% endif %}
+    {% if last %}
+    <h2>Recently cooked</h2>
+    {% for l in last %}<p>{{ l.cooked_on.strftime('%d %b') }} · {{ l.label }}{% if l.guests %} <span class="muted">for {{ l.guests }}</span>{% endif %}</p>{% endfor %}
+    {% endif %}
+  </section>
+</div>
+{% if feature %}{% set fr = feature.recipe %}
+<section class="ktoday">
+  <h2>Cooking today: {{ fr.title }} <small>{{ feature.meal }}{% if feature.servings %} · for {{ feature.servings }}{% endif %}</small></h2>
+  <div class="ktodaybody">
+    <ul>{% for line in feature_lines %}{% if is_header(line) %}<li class="inghead">{{ header_text(line) }}</li>{% else %}<li>{{ line }}</li>{% endif %}{% endfor %}</ul>
+    <ol>{% for st in fr.steps %}{% if is_header(st) %}<li class="stephead">{{ header_text(st) }}</li>{% else %}<li>{{ st }}</li>{% endif %}{% endfor %}</ol>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

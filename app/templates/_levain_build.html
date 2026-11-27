@@ -1,0 +1,14 @@
+{# Levain build box. Needs `b` (bread.LevainBuild). #}
+<div class="levainbuild">
+  <table class="bread small">
+    <thead><tr><th>Feed {{ '%g' % b.ratio[0] }} : {{ '%g' % b.ratio[1] }} : {{ '%g' % b.ratio[2] }}</th><th>Parts</th><th>Weight</th></tr></thead>
+    <tbody>
+      <tr><th>Starter <small class="muted" data-sh>({{ '%g' % b.starter_hydration }}% hydration)</small></th><td>{{ '%g' % b.ratio[0] }}</td><td class="strong">{{ b.starter|grams }} g</td></tr>
+      <tr><th>Water</th><td>{{ '%g' % b.ratio[1] }}</td><td class="strong">{{ b.water|grams }} g</td></tr>
+      <tr><th>Flour</th><td>{{ '%g' % b.ratio[2] }}</td><td class="strong">{{ b.flour|grams }} g</td></tr>
+    </tbody>
+    <tfoot><tr><th></th><td>{{ '%g' % b.parts }}</td><td>{{ b.target|grams }} g</td></tr></tfoot>
+  </table>
+  <p class="breadsum">Levain contains <b>{{ b.total_flour|grams }} g flour</b> and <b>{{ b.total_water|grams }} g water</b>
+    (starter included) = <b>{{ '%g' % (b.hydration|round(1)) }}% hydration</b>.</p>
+</div>

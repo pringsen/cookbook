@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Add recipe{% endblock %}
+{% block content %}
+<h1>Add a recipe</h1>
+<div class="tabs" role="tablist">
+  <a href="/import?tab=photo" class="{{ 'on' if tab=='photo' }}">From photo</a>
+  <a href="/import?tab=url" class="{{ 'on' if tab=='url' }}">From a link</a>
+  <a href="/recipes/new">Write it yourself</a>
+</div>
+
+{% if tab == 'url' %}
+<form method="post" action="/import/url" class="stack card-form" data-busy="Fetching the recipe…">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <p class="muted">Paste a link to a recipe page. Most recipe sites publish structured recipe data, which is read directly. You can check everything before it's saved.</p>
+  <label>Recipe link <input name="url" type="url" required placeholder="https://www.example.com/best-lasagne" autofocus></label>
+  {% if ai_ready %}<label class="check"><input type="checkbox" name="use_ai" value="1" checked> Let AI read the page if it has no recipe data</label>{% endif %}
+  <button class="btn primary">Import</button>
+</form>
+{% else %}
+{% if not ai_ready %}
+<div class="flash error">Photo import needs an Anthropic API key. {% if user.is_admin %}<a href="/settings">Add one in Settings</a>.{% else %}Ask your admin to add one in Settings.{% endif %}</div>
+{% endif %}
+<form method="post" action="/import/photo" enctype="multipart/form-data" class="stack card-form" data-busy="Reading your photo… this can take up to a minute.">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <p class="muted">Take a photo of a cookbook page, a handwritten card or a screenshot. Several photos are read as pages of one recipe, in order.</p>
+  <label class="drop">
+    <input type="file" name="photos" accept="image/*" multiple required {{ 'disabled' if not ai_ready }}>
+    <span>Choose or take photos</span>
+  </label>
+  <div class="thumbs" id="photoPreview"></div>
+  <label>Anything the AI should know? <small class="muted">optional</small>
+    <input name="hint" placeholder="e.g. only the recipe on the right page"></label>
+  <label class="check"><input type="checkbox" name="keep_photo" value="1"> Use the first photo as the recipe picture</label>
+  <button class="btn primary" {{ 'disabled' if not ai_ready }}>Read recipe</button>
+  {% if ai_ready %}<p class="muted small">Uses {{ model }}. Photos are sent to the Anthropic API to be read.</p>{% endif %}
+</form>
+{% endif %}
+{% endblock %}

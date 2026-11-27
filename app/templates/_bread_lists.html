@@ -1,0 +1,11 @@
+{# Compact levain / final dough lists for cook mode. Needs `res`. #}
+{% set lev = res.levain_weight > 0.05 %}
+{% if lev %}
+<li class="inghead">Levain ({{ res.levain_weight|grams }} g)</li>
+{% for x in res.flours + res.others %}{% if x.levain_weight > 0.05 %}<li>{{ x.levain_weight|grams }} g {{ x.name }}</li>{% endif %}{% endfor %}
+<li class="inghead">Final dough</li>
+{% for x in res.flours + res.others %}{% if x.final_weight > 0.05 %}<li>{{ x.final_weight|grams }} g {{ x.name }}</li>{% endif %}{% endfor %}
+<li>{{ res.levain_weight|grams }} g levain</li>
+{% else %}
+{% for x in res.flours + res.others %}{% if x.weight > 0.05 %}<li>{{ x.weight|grams }} g {{ x.name }}</li>{% endif %}{% endfor %}
+{% endif %}

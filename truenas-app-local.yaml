@@ -1,0 +1,42 @@
+# Cookbook for TrueNAS SCALE, variant that uses an image built on the NAS itself (no GitHub needed).
+# Paste into Apps > Discover Apps > ⋮ > Install via YAML.
+# Before pasting, replace:
+#   tank                     -> your pool name (3 places)
+#   CHANGE_ME_DB_PASSWORD    -> a long password, letters and digits only (2 places)
+# The image "cookbook:local" must be built first (see TRUENAS.md, "Without GitHub").
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cookbook
+      POSTGRES_USER: cookbook
+      POSTGRES_PASSWORD: CHANGE_ME_DB_PASSWORD
+    volumes:
+      - /mnt/tank/apps/cookbook/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cookbook -d cookbook"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    image: cookbook:local
+    pull_policy: never
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://cookbook:CHANGE_ME_DB_PASSWORD@db:5432/cookbook
+      TZ: Europe/Vienna
+      # Optional. You can also paste the key in the app under Settings instead.
+      ANTHROPIC_API_KEY: ""
+      # Runs as the TrueNAS "apps" user (568) after fixing folder permissions.
+      PUID: "568"
+      PGID: "568"
+      SECURE_COOKIES: "false"
+    volumes:
+      - /mnt/tank/apps/cookbook/data:/data
+    ports:
+      - "8080:8000"

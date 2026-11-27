@@ -1,0 +1,56 @@
+{# Bread editor: baker's percentages. `bs` = bread spec dict. Rows with an empty name are ignored. #}
+{% set bb = bs.levain_build or {} %}
+<fieldset class="breadedit" data-bread-editor>
+  <legend>Bread: baker's percentages</legend>
+  <p class="muted small">All percentages are of the total flour (100 %), including the flour in the levain. The ingredient list and the dough weights are calculated from this.</p>
+
+  <div class="row">
+    <label>Pieces <input type="number" name="pieces" min="1" value="{{ bs.pieces or 1 }}" data-calc></label>
+    <label>Called <input name="piece_name" value="{{ bs.piece_name or 'pieces' }}" placeholder="rolls, loaves, pizzas" data-calc></label>
+    <label>Weight per piece (g) <input type="number" name="piece_weight" min="0" step="any" value="{{ '%g' % bs.piece_weight if bs.piece_weight else '' }}" data-calc></label>
+    <label>…or total dough (g) <input type="number" name="total_weight" min="0" step="any" value="{{ '%g' % bs.total_weight if bs.total_weight else '' }}" placeholder="optional" data-calc></label>
+  </div>
+
+  <h3>Flours <small class="muted">% of total flour · % of levain flour</small></h3>
+  <div class="browlist" data-rows="flour">
+    {% set frows = bs.flours + [{}, {}] %}
+    {% for f in frows %}
+    <div class="brow">
+      <input name="flour_name" value="{{ f.name or '' }}" placeholder="Flour, e.g. W700" data-calc>
+      <input name="flour_pct" type="number" step="any" value="{{ '%g' % f.pct if f.pct is not none and f.name else '' }}" placeholder="%" data-calc aria-label="% of flour">
+      <input name="flour_lpct" type="number" step="any" value="{{ '%g' % f.levain_pct if f.levain_pct is not none and f.name else '' }}" placeholder="levain %" data-calc aria-label="% of levain flour">
+    </div>
+    {% endfor %}
+  </div>
+  <button type="button" class="linkbtn" data-add-row="flour">+ add flour</button>
+
+  <h3>Other ingredients <small class="muted">% of total flour · % of levain flour · liquid</small></h3>
+  <div class="browlist" data-rows="other">
+    {% set orows = bs.others + [{}, {}] %}
+    {% for o in orows %}
+    <div class="brow">
+      <input name="other_name" value="{{ o.name or '' }}" placeholder="e.g. Water, Salt, Olive oil" data-calc>
+      <input name="other_pct" type="number" step="any" value="{{ '%g' % o.pct if o.pct is not none and o.name else '' }}" placeholder="%" data-calc aria-label="% of flour">
+      <input name="other_lpct" type="number" step="any" value="{{ '%g' % o.levain_pct if o.levain_pct is not none and o.name else '' }}" placeholder="levain %" data-calc aria-label="% of levain flour">
+      <label class="check" title="Counts toward hydration"><input type="checkbox" name="other_liquid" value="{{ loop.index0 }}" {{ 'checked' if o.liquid }} data-calc> liquid</label>
+    </div>
+    {% endfor %}
+  </div>
+  <button type="button" class="linkbtn" data-add-row="other">+ add ingredient</button>
+
+  <h3>Levain</h3>
+  <div class="row">
+    <label>Levain, % of total flour <input type="number" name="levain_pct" min="0" step="any" value="{{ '%g' % bs.levain_pct if bs.levain_pct is not none else 0 }}" data-calc></label>
+  </div>
+  <p class="muted small">Use 0 for a yeasted dough without levain. The levain's composition comes from the “levain %” columns above (e.g. water 100 % = a 100 % hydration levain), or from the starter feed below.</p>
+  <label class="check"><input type="checkbox" name="build_enabled" value="1" {{ 'checked' if bb.enabled }} data-calc> Build the levain from my sourdough starter</label>
+  <div class="row buildrow">
+    <label>Starter <input type="number" name="build_starter" min="0" step="any" value="{{ '%g' % (bb.starter if bb.starter is not none else 1) }}" data-calc></label>
+    <label>: Water <input type="number" name="build_water" min="0" step="any" value="{{ '%g' % (bb.water if bb.water is not none else 3) }}" data-calc></label>
+    <label>: Flour <input type="number" name="build_flour" min="0" step="any" value="{{ '%g' % (bb.flour if bb.flour is not none else 5) }}" data-calc></label>
+    <label>Starter hydration % <input type="number" name="build_starter_hydration" min="0" step="any" value="{{ '%g' % (bb.starter_hydration if bb.starter_hydration is not none else 100) }}" data-calc></label>
+    <label>Extra to keep % <input type="number" name="build_extra_pct" min="0" step="any" value="{{ '%g' % (bb.extra_pct if bb.extra_pct is not none else 10) }}" data-calc></label>
+  </div>
+
+  <div class="breadpreview" data-bread-preview aria-live="polite"><p class="muted small">Weights are shown here as you type (and on the recipe page after saving).</p></div>
+</fieldset>

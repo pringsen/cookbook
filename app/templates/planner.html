@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Meal planner{% endblock %}
+{% block content %}
+<div class="sechead">
+  <h1>Meal planner</h1>
+  <div class="pager">
+    <a class="btn small" href="/planner?week={{ prev_w.isoformat() }}" aria-label="Previous week">‹</a>
+    <strong>{{ days[0].strftime('%d %b') }} – {{ days[6].strftime('%d %b %Y') }}</strong>
+    <a class="btn small" href="/planner?week={{ next_w.isoformat() }}" aria-label="Next week">›</a>
+  </div>
+</div>
+<div class="actions">
+  <a class="btn small" href="/planner">This week</a>
+  {% if has_entries %}
+  <form method="post" action="/planner/shopping" class="inline">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="week" value="{{ ws.isoformat() }}">
+    <button class="btn small primary">Add this week's ingredients to shopping list</button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="week">
+  {% for d in days %}
+  <section class="wday {{ 'today' if d == today }} {{ 'past' if d < today }}">
+    <h3>{{ d.strftime('%A') }} <small>{{ d.strftime('%d %b') }}</small></h3>
+    {% for m in meals %}
+      {% set items = grid.get((d, m), []) %}
+      {% if items %}
+      <div class="slot"><span class="meal">{{ m }}</span>
+        {% for e in items %}
+        <div class="entry {{ 'done' if e.cooked }}">
+          {% if e.recipe %}<a href="/recipes/{{ e.recipe.id }}{{ '?servings=%d' % e.servings if e.servings }}">{{ e.label }}</a>{% else %}<span>{{ e.label }}</span>{% endif %}
+          {% if e.servings %}<small class="muted">×{{ e.servings }}</small>{% endif %}
+          <span class="entryact">
+            {% if not e.cooked %}
+            <form method="post" action="/planner/{{ e.id }}/cooked" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="linkbtn" title="Mark as cooked and log it in the calendar">✓ cooked</button></form>
+            {% else %}<small class="muted">cooked</small>{% endif %}
+            <form method="post" action="/planner/{{ e.id }}/delete" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="linkbtn" aria-label="Remove">×</button></form>
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endfor %}
+    <details class="addmeal">
+      <summary>+ add</summary>
+      <form method="post" action="/planner/add" class="stack">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="hidden" name="day" value="{{ d.isoformat() }}">
+        <select name="meal">{% for m in meals %}<option {{ 'selected' if m=='dinner' }}>{{ m }}</option>{% endfor %}</select>
+        <select name="recipe_id"><option value="">– pick a recipe –</option>{% for r in recipes %}<option value="{{ r.id }}">{{ r.title }}</option>{% endfor %}</select>
+        <input name="note" placeholder="…or a note, e.g. Eating out">
+        <input type="number" name="servings" min="1" placeholder="Servings (optional)">
+        <button class="btn small primary">Add</button>
+      </form>
+    </details>
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,8 @@
+<a class="card" href="/recipes/{{ r.id }}">
+  <div class="thumb">{% if r.image %}<img src="/media/{{ r.image }}" alt="" loading="lazy">{% else %}<span>{{ r.title[:1] }}</span>{% endif %}
+    {% if r.favorite %}<em class="fav" title="Favorite">♥</em>{% endif %}</div>
+  <div class="cardbody">
+    <strong>{{ r.title }}</strong>
+    <small class="muted">{% if r.total_minutes %}{{ r.total_minutes|minutes }}{% endif %}{% if r.total_minutes and r.servings %} · {% endif %}{% if r.servings %}{{ r.servings }} servings{% endif %}{% if r.rating %} · {{ '★' * r.rating }}{% endif %}</small>
+  </div>
+</a>

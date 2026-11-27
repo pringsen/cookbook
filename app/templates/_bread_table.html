@@ -1,0 +1,37 @@
+{# Baker's percentage table, laid out like the spreadsheet: recipe | levain | final dough. Needs `res`. #}
+{% set lev = res.levain_weight > 0.05 %}
+<div class="tablewrap">
+<table class="bread">
+  <thead>
+    <tr class="grouphead"><th></th><th colspan="2">Recipe</th>{% if lev %}<th colspan="2">Levain</th><th>Final dough</th>{% endif %}</tr>
+    <tr><th></th><th>%</th><th>Weight</th>{% if lev %}<th>%</th><th>Weight</th><th>Weight</th>{% endif %}</tr>
+  </thead>
+  <tbody>
+    <tr class="flourtotal"><th>Flour</th><td>100%</td><td>{{ res.flour.weight|grams }} g</td>
+      {% if lev %}<td>100%</td><td>{{ res.flour.levain_weight|grams }} g</td><td>{{ res.flour.final_weight|grams }} g</td>{% endif %}</tr>
+    {% for x in res.flours %}
+    <tr class="sub {{ 'zero' if x.weight < 0.05 }}"><th>– {{ x.name }}</th><td>{{ '%g' % x.pct }}%</td><td>{{ x.weight|grams }} g</td>
+      {% if lev %}<td>{{ '%g' % x.levain_pct }}%</td><td>{{ x.levain_weight|grams }} g</td><td class="strong">{{ x.final_weight|grams }} g</td>{% endif %}</tr>
+    {% endfor %}
+    {% for x in res.others %}
+    <tr class="{{ 'zero' if x.weight < 0.05 }}"><th>{{ x.name }}</th><td>{{ '%g' % x.pct }}%</td><td>{{ x.weight|grams }} g</td>
+      {% if lev %}<td>{{ '%g' % x.levain_pct }}%</td><td>{{ x.levain_weight|grams if x.levain_weight > 0.05 else '' }}{{ ' g' if x.levain_weight > 0.05 }}</td><td>{{ x.final_weight|grams }} g</td>{% endif %}</tr>
+    {% endfor %}
+    {% if lev %}<tr class="levrow"><th>Levain</th><td></td><td></td><td></td><td></td><td class="strong">{{ res.levain_weight|grams }} g</td></tr>{% endif %}
+  </tbody>
+  <tfoot>
+    <tr><th></th><td>{{ '%g' % (res.total_pct|round(2)) }}%</td><td>{{ res.total_weight|grams }} g</td>
+      {% if lev %}<td>{{ '%g' % (res.levain_pct|round(2)) }}%</td><td>{{ res.levain_weight|grams }} g</td><td>{{ res.total_weight|grams }} g</td>{% endif %}</tr>
+  </tfoot>
+</table>
+</div>
+<p class="breadsum">
+  {{ res.pieces }} {{ res.piece_name }} × {{ res.piece_weight|grams }} g = <b>{{ res.total_weight|grams }} g</b> dough
+  · hydration <b>{{ '%g' % (res.hydration|round(1)) }}%</b>
+  {% if lev %}· levain <b>{{ '%g' % (res.levain_pct|round(1)) }}%</b> ({{ '%g' % (res.levain_hydration|round(1)) }}% hydration, {{ '%g' % (res.levain_flour_pct|round(1)) }}% of the flour prefermented){% endif %}
+</p>
+{% for w in res.warnings %}<p class="flash error">{{ w }}</p>{% endfor %}
+{% if res.build %}
+<h3 class="buildhead">Build the levain{% if res.build_extra_pct %} <small class="muted">(+{{ '%g' % res.build_extra_pct }}% to keep)</small>{% endif %}</h3>
+{% with b = res.build %}{% include "_levain_build.html" %}{% endwith %}
+{% endif %}

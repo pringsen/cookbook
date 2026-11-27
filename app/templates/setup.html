@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Welcome{% endblock %}
+{% block mainclass %}auth{% endblock %}
+{% block content %}
+<div class="authcard">
+  <img src="/static/icon.svg" alt="" width="56" height="56">
+  <h1>Set up your cookbook</h1>
+  <p class="muted">Create the first account. It becomes the admin and can add other people later.</p>
+  <form method="post" action="/setup" class="stack">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Your name <input name="display_name" autocomplete="name" placeholder="e.g. Philipp"></label>
+    <label>Username <input name="username" required autocomplete="username" autocapitalize="none"></label>
+    <label>Password <input name="password" type="password" required minlength="8" autocomplete="new-password"></label>
+    <button class="btn primary">Create account</button>
+  </form>
+</div>
+{% endblock %}

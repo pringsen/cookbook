@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="{{ '#ffffff' if mode == 'epaper' else '#c2410c' }}">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" href="/static/icon.svg">
+  {% block head %}{% endblock %}
+  <title>{% block title %}Cookbook{% endblock %} · Cookbook</title>
+  <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/style.css?v=6">
+  <script defer src="/static/app.js?v=4"></script>
+</head>
+<body class="mode-{{ mode }}">
+{% if user and not hide_nav %}
+<header class="topbar">
+  <a class="brand" href="/"><img src="/static/icon.svg" alt="" width="26" height="26"> Cookbook</a>
+  {% set p = request.url.path %}
+  <nav class="mainnav">
+    <a href="/recipes" class="{{ 'on' if p.startswith('/recipes') or p.startswith('/import') }}">Recipes</a>
+    <a href="/cookbooks" class="{{ 'on' if p.startswith('/cookbooks') }}">Cookbooks</a>
+    <a href="/planner" class="{{ 'on' if p.startswith('/planner') }}">Planner</a>
+    <a href="/calendar" class="{{ 'on' if p.startswith('/calendar') }}">Calendar</a>
+    <a href="/shopping" class="{{ 'on' if p.startswith('/shopping') }}">Shopping</a>
+  </nav>
+  <div class="topright">
+    <a href="/import" class="btn small primary">+ Add recipe</a>
+    <a href="/settings" class="iconlink {{ 'on' if p.startswith('/settings') }}" title="Settings ({{ user.name }})">⚙</a>
+  </div>
+</header>
+{% endif %}
+<main class="{% block mainclass %}page{% endblock %}">
+  {% for kind, msg in flashes %}
+  <div class="flash {{ kind }}" role="status">{{ msg }}</div>
+  {% endfor %}
+  {% block content %}{% endblock %}
+</main>
+{% if user and not hide_nav %}
+<footer class="displayswitch noprint">
+  Display:
+  {% for m, label in [('standard', 'Standard'), ('tablet', 'Tablet'), ('epaper', 'E-paper')] %}
+  <a href="/display/{{ m }}?next={{ request.url.path|urlencode }}" class="{{ 'on' if mode == m }}">{{ label }}</a>{{ ' ·' if not loop.last }}
+  {% endfor %}
+</footer>
+{% endif %}
+<input type="hidden" id="csrf" value="{{ csrf }}">
+</body>
+</html>

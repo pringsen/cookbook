@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}{{ r.title }}: cooking{% endblock %}
+{% block mainclass %}cook{% if view == 'page' %} cookwide{% endif %}{% endblock %}
+{% block content %}
+<div class="cookbar">
+  <a href="/recipes/{{ r.id }}" class="btn small">✕ Close</a>
+  <strong class="cooktitle">{{ r.title }}</strong>
+  {% if view == 'page' %}
+  <a class="btn small viewswitch" href="/recipes/{{ r.id }}/cook?step=0&amp;view=steps{{ qb }}">One step at a time</a>
+  {% else %}
+  <span class="cookpos">{% if step == 0 %}Ingredients{% else %}Step {{ step }} of {{ total }}{% endif %}</span>
+  <a class="btn small viewswitch" href="/recipes/{{ r.id }}/cook?view=page{{ qb }}">Whole recipe</a>
+  {% endif %}
+</div>
+
+{% if view == 'page' %}
+{# Whole recipe on one screen: one text flow in columns, so a bigger display shows more columns. #}
+<div class="cookpage" data-cook>
+  <section class="cpings">
+    <h2>Ingredients{% if res %} <small>{{ res.pieces }} {{ res.piece_name }} × {{ res.piece_weight|grams }} g</small>{% elif servings %} <small>for {{ servings }}</small>{% endif %}</h2>
+    <ul>
+      {% if res %}{% include "_bread_lists.html" %}
+      {% else %}
+      {% for line in lines %}
+        {% if is_header(line) %}<li class="inghead">{{ header_text(line) }}</li>{% else %}<li>{{ line }}</li>{% endif %}
+      {% else %}<li>No ingredients listed.</li>{% endfor %}
+      {% endif %}
+    </ul>
+  </section>
+  {% if res and res.build %}{% set b = res.build %}
+  <section class="cpbuild">
+    <h2>Build the levain <small>{{ '%g' % b.ratio[0] }}:{{ '%g' % b.ratio[1] }}:{{ '%g' % b.ratio[2] }}</small></h2>
+    <ul><li>{{ b.starter|grams }} g starter ({{ '%g' % b.starter_hydration }}%)</li><li>{{ b.water|grams }} g water</li><li>{{ b.flour|grams }} g flour</li></ul>
+  </section>
+  {% endif %}
+  {% if all_steps %}
+  <section class="cpsteps">
+    <h2>Method</h2>
+    <ol>
+      {% for s in all_steps %}{% if is_header(s) %}<li class="stephead">{{ header_text(s) }}</li>{% else %}<li>{{ s }}</li>{% endif %}{% endfor %}
+    </ol>
+  </section>
+  {% endif %}
+  {% if r.notes %}<section class="cpnotes"><h2>Notes</h2><p>{{ r.notes }}</p></section>{% endif %}
+</div>
+<nav class="cooknav">
+  <a class="btn big" href="/recipes/{{ r.id }}">‹ Recipe</a>
+  <a class="btn big primary" href="/recipes/{{ r.id }}#cooked">Done ✓</a>
+</nav>
+{% else %}
+
+<div class="cookstage" data-cook data-prev="{{ '/recipes/%d/cook?step=%d%s' % (r.id, step - 1, q) if step > 0 else '' }}" data-next="{{ '/recipes/%d/cook?step=%d%s' % (r.id, step + 1, q) if step < total else '' }}">
+  {% if step == 0 %}
+    <div class="cookings">
+      <h1>Ingredients{% if res %} <small>{{ res.pieces }} {{ res.piece_name }} × {{ res.piece_weight|grams }} g</small>{% elif servings %} <small>for {{ servings }}</small>{% endif %}</h1>
+      <ul>
+        {% if res %}{% include "_bread_lists.html" %}
+        {% else %}
+        {% for line in lines %}
+          {% if is_header(line) %}<li class="inghead">{{ header_text(line) }}</li>{% else %}<li>{{ line }}</li>{% endif %}
+        {% else %}<li>No ingredients listed.</li>{% endfor %}
+        {% endif %}
+      </ul>
+    </div>
+  {% else %}
+    <div class="cookstep">
+      {% if section %}<p class="cooksection">{{ section }}</p>{% endif %}
+      <span class="cooknum">{{ step }}</span>
+      <p>{{ steps[step - 1] }}</p>
+    </div>
+    {% if mode == 'tablet' and lines %}
+    <aside class="cookside">
+      <h2>Ingredients</h2>
+      <ul>{% if res %}{% include "_bread_lists.html" %}{% else %}{% for line in lines %}{% if is_header(line) %}<li class="inghead">{{ header_text(line) }}</li>{% else %}<li>{{ line }}</li>{% endif %}{% endfor %}{% endif %}</ul>
+    </aside>
+    {% endif %}
+  {% endif %}
+</div>
+
+<nav class="cooknav">
+  {% if step > 0 %}<a class="btn big" href="/recipes/{{ r.id }}/cook?step={{ step - 1 }}{{ q }}">‹ {{ 'Ingredients' if step == 1 else 'Back' }}</a>{% else %}<span></span>{% endif %}
+  <span class="dots" aria-hidden="true">{% for i in range(total + 1) %}<i class="{{ 'on' if i == step }}"></i>{% endfor %}</span>
+  {% if step < total %}<a class="btn big primary" href="/recipes/{{ r.id }}/cook?step={{ step + 1 }}{{ q }}">{{ 'Start' if step == 0 else 'Next' }} ›</a>
+  {% else %}<a class="btn big primary" href="/recipes/{{ r.id }}#cooked">Done ✓</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

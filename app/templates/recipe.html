@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}{{ r.title }}{% endblock %}
+{% block content %}
+<article class="recipe">
+  <div class="recipehead">
+    {% if r.image %}<img class="hero" src="/media/{{ r.image }}" alt="">{% endif %}
+    <div class="headtext">
+      {% if r.cookbooks %}<p class="kicker"><a class="muted" href="/cookbooks/{{ r.cookbooks[0].id }}">{{ r.cookbooks[0].name }}</a></p>{% endif %}
+      <h1>{{ r.title }}</h1>
+      {% if r.description %}<p class="lead">{{ r.description }}</p>{% endif %}
+      <ul class="meta" data-live-swap="meta">
+        {% if r.prep_minutes %}<li>Prep <b>{{ r.prep_minutes|minutes }}</b></li>{% endif %}
+        {% if r.cook_minutes %}<li>Cook <b>{{ r.cook_minutes|minutes }}</b></li>{% endif %}
+        {% if res %}<li>Makes <b>{{ res.pieces }} {{ res.piece_name }}</b></li><li>Hydration <b>{{ '%g' % (res.hydration|round(1)) }}%</b></li>
+        {% elif r.servings %}<li>Serves <b>{{ r.servings }}</b></li>{% endif %}
+        {% if r.rating %}<li class="stars">{{ '★' * r.rating }}{{ '☆' * (5 - r.rating) }}</li>{% endif %}
+        <li>Cooked <b>{{ times_cooked }}×</b>{% if logs %}, last {{ logs[0].cooked_on.strftime('%d %b %Y') }}{% endif %}</li>
+      </ul>
+      {% if r.tag_list %}<div class="tags">{% for t in r.tag_list %}<a class="tag" href="/recipes?tag={{ t|urlencode }}">{{ t }}</a>{% endfor %}</div>{% endif %}
+      {% if r.cookbooks|length > 1 %}<p class="muted small">Also in: {% for c in r.cookbooks[1:] %}<a href="/cookbooks/{{ c.id }}">{{ c.name }}</a>{{ ', ' if not loop.last }}{% endfor %}</p>{% endif %}
+      <div class="actions noprint">
+        <a class="btn primary" data-live-swap="cook" href="/recipes/{{ r.id }}/cook{% if res %}?servings={{ res.pieces }}&piece_weight={{ '%g' % (res.piece_weight|round(1)) }}{% elif servings and servings != r.servings %}?servings={{ servings }}{% endif %}">Start cooking</a>
+        <a class="btn" href="/recipes/{{ r.id }}/edit">Edit</a>
+        <form method="post" action="/recipes/{{ r.id }}/favorite" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}">
+          <button class="btn">{{ '♥ Favorite' if r.favorite else '♡ Favorite' }}</button></form>
+        <button class="btn" type="button" data-print>Print</button>
+      </div>
+    </div>
+  </div>
+
+  {% if res %}
+  <section class="breadsec">
+    <div class="sechead"><h2>Dough</h2>
+      <form method="get" class="scaler noprint" action="/recipes/{{ r.id }}" data-live-form>
+        <label>{{ res.piece_name|capitalize }} <input type="number" name="servings" min="1" max="500" value="{{ res.pieces }}"></label>
+        <label>× g <input type="number" name="piece_weight" min="1" step="any" value="{{ '%g' % (res.piece_weight|round(1)) }}"></label>
+        <button class="btn small" data-js-hide>Recalculate</button>
+      </form>
+    </div>
+    <div data-live-swap="bread">
+    {% include "_bread_table.html" %}
+    <form method="post" action="/recipes/{{ r.id }}/shopping" class="noprint">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="hidden" name="servings" value="{{ res.pieces }}">
+      <input type="hidden" name="piece_weight" value="{{ res.piece_weight }}">
+      {% for line in lines %}<input type="hidden" name="item" value="{{ loop.index0 }}">{% endfor %}
+      <button class="btn small">Add ingredients to shopping list</button>
+    </form>
+    </div>
+  </section>
+  <div class="recipebody breadbody">
+  {% else %}
+  <div class="recipebody">
+    <section class="ingredients">
+      <div class="sechead"><h2>Ingredients</h2>
+        {% if r.servings %}
+        <form method="get" class="scaler noprint" action="/recipes/{{ r.id }}" data-live-form>
+          <label>Servings <input type="number" name="servings" min="1" max="200" value="{{ servings }}"></label>
+          <button class="btn small" data-js-hide>Scale</button>
+        </form>
+        {% endif %}
+      </div>
+      <div data-live-swap="ings">
+      {% if factor != 1 %}<p class="muted small">Quantities scaled from {{ r.servings }} to {{ servings }} servings.</p>{% endif %}
+      <form method="post" action="/recipes/{{ r.id }}/shopping" id="shopform">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="hidden" name="servings" value="{{ servings or '' }}">
+        <ul class="inglist">
+          {% for line in lines %}
+            {% if is_header(line) %}<li class="inghead">{{ header_text(line) }}</li>
+            {% else %}<li><label><input type="checkbox" name="item" value="{{ loop.index0 }}" checked class="noprint"> <span>{{ line }}</span></label></li>{% endif %}
+          {% else %}<li class="muted">No ingredients listed.</li>
+          {% endfor %}
+        </ul>
+        {% if lines %}<button class="btn small noprint">Add checked to shopping list</button>{% endif %}
+      </form>
+      </div>
+    </section>
+
+  {% endif %}
+    <section class="steps">
+      <h2>Method</h2>
+      <ol>{% for s in r.steps %}{% if is_header(s) %}<li class="stephead">{{ header_text(s) }}</li>{% else %}<li>{{ s }}</li>{% endif %}{% else %}<li class="muted">No steps yet.</li>{% endfor %}</ol>
+      {% if r.notes %}<h3>Notes</h3><p class="notes">{{ r.notes }}</p>{% endif %}
+      {% if r.source_url %}<p class="muted small source">Source: <a href="{{ r.source_url }}" rel="noopener noreferrer" target="_blank">{{ r.source_url[:80] }}</a></p>{% endif %}
+    </section>
+  </div>
+
+  <div class="panels noprint">
+    <details class="panel" id="cooked">
+      <summary>I cooked this</summary>
+      <form method="post" action="/recipes/{{ r.id }}/cooked" class="stack">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <div class="row">
+          <label>When <input type="date" name="cooked_on" value="{{ today.isoformat() }}"></label>
+          <label>Rating <select name="rating"><option value="">–</option>{% for i in range(5,0,-1) %}<option value="{{ i }}">{{ '★' * i }}</option>{% endfor %}</select></label>
+        </div>
+        <label>For whom <input name="guests" placeholder="e.g. Anna, Tom, the neighbours"></label>
+        <label>Notes <input name="notes" placeholder="e.g. used less salt, doubled the sauce"></label>
+        <button class="btn primary">Add to calendar</button>
+      </form>
+    </details>
+    <details class="panel">
+      <summary>Plan this</summary>
+      <form method="post" action="/recipes/{{ r.id }}/plan" class="stack">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <div class="row">
+          <label>Day <input type="date" name="day" value="{{ today.isoformat() }}"></label>
+          <label>Meal <select name="meal">{% for m in meals %}<option {{ 'selected' if m=='dinner' }}>{{ m }}</option>{% endfor %}</select></label>
+          <label>Servings <input type="number" name="servings" min="1" value="{{ servings or '' }}"></label>
+        </div>
+        <button class="btn primary">Add to meal planner</button>
+      </form>
+    </details>
+    <details class="panel">
+      <summary>Cookbooks</summary>
+      {% if cookbooks %}
+      <form method="post" action="/recipes/{{ r.id }}/cookbooks" class="stack">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <div class="checks">{% for c in cookbooks %}<label class="check"><input type="checkbox" name="cookbooks" value="{{ c.id }}" {{ 'checked' if c in r.cookbooks }}> {{ c.name }}</label>{% endfor %}</div>
+        <button class="btn">Save</button>
+      </form>
+      {% else %}<p class="muted">No cookbooks yet. <a href="/cookbooks">Create one</a>.</p>{% endif %}
+    </details>
+    {% if logs %}
+    <details class="panel">
+      <summary>History ({{ times_cooked }})</summary>
+      <ul class="loglist">{% for l in logs %}<li><span class="day">{{ l.cooked_on.strftime('%d %b %Y') }}</span>{% if l.guests %} for {{ l.guests }}{% endif %}{% if l.rating %} · {{ '★' * l.rating }}{% endif %}{% if l.notes %} <span class="muted">– {{ l.notes }}</span>{% endif %}</li>{% endfor %}</ul>
+    </details>
+    {% endif %}
+    <details class="panel danger">
+      <summary>Delete recipe</summary>
+      <form method="post" action="/recipes/{{ r.id }}/delete">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <p>This removes the recipe and its photo. Calendar entries stay.</p>
+        <button class="btn dangerbtn">Delete “{{ r.title }}”</button>
+      </form>
+    </details>
+  </div>
+</article>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<h1>Settings</h1>
+
+<section class="panel">
+  <h2>AI recipe reading</h2>
+  <p class="muted">Photo import and reading pages without recipe data use Claude by Anthropic. Get an API key at console.anthropic.com. Each photo costs a few cents at most.</p>
+  {% if user.is_admin %}
+  <form method="post" action="/settings/ai" class="stack">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    {% if key_from_env %}
+      <p>API key is set by the <code>ANTHROPIC_API_KEY</code> environment variable ({{ key_hint }}).</p>
+    {% else %}
+      <label>Anthropic API key {% if has_key %}<small class="muted">saved: {{ key_hint }}. Leave empty to keep it.</small>{% endif %}
+        <input name="api_key" type="password" autocomplete="off" placeholder="sk-ant-…"></label>
+      {% if has_key %}<label class="check"><input type="checkbox" name="clear_key" value="1"> Remove saved key</label>{% endif %}
+    {% endif %}
+    {% if model_from_env %}
+      <p>Model is set by the <code>AI_MODEL</code> environment variable: <code>{{ model }}</code>.</p>
+    {% else %}
+      <label>Model <small class="muted">default: {{ default_model }}</small>
+        <input name="model" value="{{ '' if model == default_model else model }}" placeholder="{{ default_model }}"></label>
+    {% endif %}
+    <button class="btn primary">Save</button>
+  </form>
+  {% else %}
+  <p>{{ 'AI is set up.' if has_key else 'AI is not set up yet. Ask your admin.' }}</p>
+  {% endif %}
+</section>
+
+{% if user.is_admin %}
+<section class="panel">
+  <h2>People</h2>
+  <ul class="loglist">
+    {% for u in users %}
+    <li><b>{{ u.name }}</b> <span class="muted">@{{ u.username }}{{ ' · admin' if u.is_admin }}</span>
+      {% if u.id != user.id %}<form method="post" action="/settings/users/{{ u.id }}/delete" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="linkbtn">remove</button></form>{% endif %}</li>
+    {% endfor %}
+  </ul>
+  <details>
+    <summary>Add a person</summary>
+    <form method="post" action="/settings/users/new" class="stack">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <div class="row">
+        <label>Name <input name="display_name"></label>
+        <label>Username <input name="username" required autocapitalize="none"></label>
+        <label>Password <input name="password" type="password" required minlength="8" autocomplete="new-password"></label>
+      </div>
+      <label class="check"><input type="checkbox" name="is_admin" value="1"> Admin (can change settings and people)</label>
+      <button class="btn">Add</button>
+    </form>
+  </details>
+</section>
+{% endif %}
+
+<section class="panel" id="display">
+  <h2>Display mode for this device</h2>
+  <p class="muted">Saved in this browser only, so your kitchen tablet, e-reader and phone can each use their own mode.</p>
+  <div class="modes">
+    {% for m, label, desc in [('standard', 'Standard', 'Phones and computers.'), ('tablet', 'Tablet', 'iPad and other tablets in the kitchen: large touch targets, ingredients next to the steps, screen stays on while cooking.'), ('epaper', 'E-paper', 'E-ink readers and displays (Kindle, Kobo, Boox, reMarkable): black and white, no animations, large text, pages instead of scrolling.')] %}
+    <a class="mode {{ 'on' if mode == m }}" href="/display/{{ m }}?next=/settings%23display"><strong>{{ label }}</strong><span>{{ desc }}</span></a>
+    {% endfor %}
+  </div>
+  {% if user.is_admin %}
+  <h3>Kitchen display</h3>
+  <p class="muted">A read-only page with the next days' meals and the shopping list, for a tablet or e-paper screen on the wall. It refreshes itself every 15 minutes. The display link works without signing in, so only put it on devices in your home.</p>
+  {% if kiosk_token %}
+  <p class="small">Tablet: <code class="wrap">{{ base_url }}/kitchen?token={{ kiosk_token }}&amp;display=tablet</code></p>
+  <p class="small">E-paper: <code class="wrap">{{ base_url }}/kitchen?token={{ kiosk_token }}&amp;display=epaper</code></p>
+  <div class="actions">
+    <a class="btn small" href="/kitchen?token={{ kiosk_token }}&amp;display={{ 'epaper' if mode == 'epaper' else 'tablet' }}" target="_blank">Open</a>
+    <form method="post" action="/settings/kiosk" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn small">New link</button></form>
+    <form method="post" action="/settings/kiosk" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="revoke"><button class="btn small dangerbtn">Turn off</button></form>
+  </div>
+  {% else %}
+  <form method="post" action="/settings/kiosk"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn">Create display link</button></form>
+  {% endif %}
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Your password</h2>
+  <form method="post" action="/settings/password" class="stack">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="row">
+      <label>Current <input type="password" name="current" required autocomplete="current-password"></label>
+      <label>New <input type="password" name="new" required minlength="8" autocomplete="new-password"></label>
+    </div>
+    <button class="btn">Change password</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Backup</h2>
+  <p class="muted">Download every recipe, cookbook and calendar entry as JSON. For a full backup, snapshot the TrueNAS datasets (database and photos).</p>
+  <a class="btn" href="/export.json">Download export</a>
+</section>
+
+<form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn">Sign out ({{ user.name }})</button></form>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Recipes{% endblock %}
+{% block content %}
+<div class="sechead"><h1>{{ 'Breads' if kind == 'bread' else 'Recipes' }}</h1>
+  <span class="actions" style="margin:0"><a class="btn" href="/recipes/new">Write a recipe</a><a class="btn" href="/recipes/new?kind=bread">New bread</a></span></div>
+<form class="filters" method="get" action="/recipes">
+  <input type="search" name="q" value="{{ q }}" placeholder="Search title, ingredient, tag…">
+  <select name="sort" onchange="this.form.submit()">
+    <option value="title" {{ 'selected' if sort=='title' }}>A–Z</option>
+    <option value="new" {{ 'selected' if sort=='new' }}>Newest</option>
+    <option value="rating" {{ 'selected' if sort=='rating' }}>Best rated</option>
+  </select>
+  <label class="check"><input type="checkbox" name="fav" value="1" {{ 'checked' if fav }} onchange="this.form.submit()"> Favorites</label>
+  {% if tag %}<input type="hidden" name="tag" value="{{ tag }}">{% endif %}
+  {% if kind %}<input type="hidden" name="kind" value="{{ kind }}">{% endif %}
+  <button class="btn">Search</button>
+</form>
+{% if all_tags %}
+<div class="tags">
+  <a href="/recipes" class="tag {{ 'on' if not tag and kind != 'bread' }}">All</a>
+  <a href="/recipes?kind=bread" class="tag {{ 'on' if kind == 'bread' }}">Breads</a>
+  {% if kind == "bread" %}<a href="/levain" class="tag">Levain calculator</a>{% endif %}
+  {% for t in all_tags %}<a href="/recipes?tag={{ t|urlencode }}" class="tag {{ 'on' if tag|lower == t|lower }}">{{ t }}</a>{% endfor %}
+</div>
+{% endif %}
+{% if recipes %}
+<div class="grid">{% for r in recipes %}{% include "_card.html" %}{% endfor %}</div>
+{% elif q or tag or fav or kind %}
+<p class="empty">No recipes match. <a href="/recipes">Clear filters</a></p>
+{% else %}
+<div class="empty big"><p>No recipes yet.</p><a class="btn primary" href="/import">Add a recipe</a></div>
+{% endif %}
+{% endblock %}

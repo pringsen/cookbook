@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Shopping list{% endblock %}
+{% block content %}
+<div class="sechead"><h1>Shopping list</h1><a class="btn small" href="/shopping.txt" target="_blank">Plain text</a></div>
+<form method="post" action="/shopping/add" class="addbar">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <textarea name="text" rows="1" placeholder="Add items, e.g. “2 l milk” (one per line)" required data-autogrow></textarea>
+  <button class="btn primary">Add</button>
+</form>
+{% if items %}
+<ul class="shoplist">
+  {% for i in items %}
+  <li class="{{ 'checked' if i.checked }}" data-id="{{ i.id }}">
+    <form method="post" action="/shopping/{{ i.id }}/toggle" class="inline toggle"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="tick" aria-label="{{ 'Uncheck' if i.checked else 'Check' }} {{ i.name }}">{{ '✓' if i.checked else '' }}</button></form>
+    <span class="what"><b>{{ amount(i.quantity, i.unit) }}</b> {{ i.name }}{% if i.note %} <small class="muted">{{ i.note }}</small>{% endif %}</span>
+    <form method="post" action="/shopping/{{ i.id }}/delete" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="linkbtn" aria-label="Delete {{ i.name }}">×</button></form>
+  </li>
+  {% endfor %}
+</ul>
+<div class="actions">
+  <form method="post" action="/shopping/clear" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn small">Remove checked items</button></form>
+  <details class="inline-details"><summary class="btn small">Clear whole list</summary>
+    <form method="post" action="/shopping/clear" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="what" value="all"><button class="btn small dangerbtn">Yes, clear everything</button></form>
+  </details>
+</div>
+{% else %}
+<p class="empty">Your list is empty. Add items above, from a recipe, or from the <a href="/planner">meal planner</a>.</p>
+{% endif %}
+{% endblock %}

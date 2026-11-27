@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ b.name }}{% endblock %}
+{% block content %}
+<div class="bookhead" style="--c: {{ b.color }}">
+  <h1>{{ b.name }}</h1>
+  {% if b.description %}<p class="lead">{{ b.description }}</p>{% endif %}
+  <p class="muted">{{ b.recipes|length }} recipe{{ 's' if b.recipes|length != 1 }}</p>
+</div>
+{% if b.recipes %}
+<div class="grid">
+  {% for r in b.recipes %}
+  <div class="cardwrap">
+    {% include "_card.html" %}
+    <form method="post" action="/cookbooks/{{ b.id }}/remove/{{ r.id }}" class="cardx"><input type="hidden" name="csrf" value="{{ csrf }}"><button title="Remove from cookbook" aria-label="Remove {{ r.title }} from cookbook">×</button></form>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="empty">This cookbook is empty. Add recipes below.</p>
+{% endif %}
+
+<div class="panels">
+  {% if others %}
+  <details class="panel" {{ 'open' if not b.recipes }}>
+    <summary>Add recipes</summary>
+    <form method="post" action="/cookbooks/{{ b.id }}/add" class="stack">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="search" placeholder="Filter…" data-filter="#addlist">
+      <div class="checks scroll" id="addlist">{% for r in others %}<label class="check"><input type="checkbox" name="recipe" value="{{ r.id }}"> {{ r.title }}</label>{% endfor %}</div>
+      <button class="btn primary">Add selected</button>
+    </form>
+  </details>
+  {% endif %}
+  <a class="btn" href="/recipes/new?cookbook={{ b.id }}">Write a new recipe for this cookbook</a>
+  <details class="panel">
+    <summary>Edit cookbook</summary>
+    <form method="post" action="/cookbooks/{{ b.id }}/edit" class="stack">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <div class="row">
+        <label class="grow">Name <input name="name" required value="{{ b.name }}"></label>
+        <label>Colour <input type="color" name="color" value="{{ b.color }}"></label>
+      </div>
+      <label>Description <input name="description" value="{{ b.description }}"></label>
+      <button class="btn">Save</button>
+    </form>
+  </details>
+  <details class="panel danger">
+    <summary>Delete cookbook</summary>
+    <form method="post" action="/cookbooks/{{ b.id }}/delete">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <p>The recipes stay in your collection.</p>
+      <button class="btn dangerbtn">Delete “{{ b.name }}”</button>
+    </form>
+  </details>
+</div>
+{% endblock %}

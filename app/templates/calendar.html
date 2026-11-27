@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Cooking calendar{% endblock %}
+{% block content %}
+<div class="sechead">
+  <h1>Cooking calendar</h1>
+  <div class="pager">
+    <a class="btn small" href="/calendar?month={{ prev_m.strftime('%Y-%m') }}{{ '&guest=' ~ guest|urlencode if guest }}" aria-label="Previous month">‹</a>
+    <strong>{{ first.strftime('%B %Y') }}</strong>
+    <a class="btn small" href="/calendar?month={{ next_m.strftime('%Y-%m') }}{{ '&guest=' ~ guest|urlencode if guest }}" aria-label="Next month">›</a>
+  </div>
+</div>
+{% if people %}
+<div class="tags">
+  <span class="muted small">Cooked for:</span>
+  <a class="tag {{ 'on' if not guest }}" href="/calendar?month={{ first.strftime('%Y-%m') }}">Everyone</a>
+  {% for p in people %}<a class="tag {{ 'on' if guest|lower == p|lower }}" href="/calendar?month={{ first.strftime('%Y-%m') }}&guest={{ p|urlencode }}">{{ p }}</a>{% endfor %}
+</div>
+{% endif %}
+<div class="cal">
+  {% for d in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}<div class="calh">{{ d }}</div>{% endfor %}
+  {% for week in weeks %}{% for d in week %}
+  <div class="calday {{ 'other' if d.month != first.month }} {{ 'today' if d == today }}">
+    <span class="num">{{ d.day }}</span>
+    {% for l in by_day.get(d, []) %}
+    <div class="calitem" title="{{ l.label }}{{ ' – for ' ~ l.guests if l.guests }}">
+      {% if l.recipe %}<a href="/recipes/{{ l.recipe.id }}">{{ l.label }}</a>{% else %}{{ l.label }}{% endif %}
+      {% if l.guests %}<small>for {{ l.guests }}</small>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}{% endfor %}
+</div>
+
+<div class="twocol">
+<section>
+  <h2>This month</h2>
+  {% if logs %}
+  <ul class="loglist">
+    {% for l in logs %}
+    <li>
+      <span class="day">{{ l.cooked_on.strftime('%a %d') }}</span>
+      {% if l.recipe %}<a href="/recipes/{{ l.recipe.id }}">{{ l.label }}</a>{% else %}<b>{{ l.label }}</b>{% endif %}
+      {% if l.guests %}<span>for {{ l.guests }}</span>{% endif %}
+      {% if l.rating %}<span class="stars">{{ '★' * l.rating }}</span>{% endif %}
+      {% if l.notes %}<span class="muted">– {{ l.notes }}</span>{% endif %}
+      <form method="post" action="/calendar/{{ l.id }}/delete" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="linkbtn" aria-label="Delete entry">remove</button></form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="empty">Nothing logged this month.</p>{% endif %}
+</section>
+<section>
+  <h2>Log a meal</h2>
+  <form method="post" action="/calendar/new" class="stack">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Recipe <select name="recipe_id"><option value="">– not in my cookbook –</option>{% for r in recipes %}<option value="{{ r.id }}">{{ r.title }}</option>{% endfor %}</select></label>
+    <label>…or what you cooked <input name="title" placeholder="e.g. Leftover stir fry"></label>
+    <div class="row">
+      <label>When <input type="date" name="cooked_on" value="{{ today.isoformat() }}"></label>
+      <label>Rating <select name="rating"><option value="">–</option>{% for i in range(5,0,-1) %}<option value="{{ i }}">{{ '★' * i }}</option>{% endfor %}</select></label>
+    </div>
+    <label>For whom <input name="guests" list="people" placeholder="e.g. Anna, Tom"></label>
+    <datalist id="people">{% for p in people %}<option value="{{ p }}">{% endfor %}</datalist>
+    <label>Notes <input name="notes"></label>
+    <button class="btn primary">Add</button>
+  </form>
+</section>
+</div>
+{% endblock %}

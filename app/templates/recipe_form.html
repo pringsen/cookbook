@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% set src = recipe or draft %}
+{% block title %}{{ 'Edit ' ~ recipe.title if recipe else 'New recipe' }}{% endblock %}
+{% block content %}
+<h1>{{ 'Edit recipe' if recipe else ('Check imported recipe' if draft else 'Write a recipe') }}</h1>
+{% if import_note %}<div class="flash info">{{ import_note }}</div>{% endif %}
+<form method="post" enctype="multipart/form-data" action="{{ '/recipes/%d/edit' % recipe.id if recipe else '/recipes/new' }}" class="stack recipeform">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  {% set k = kind or (recipe.kind if recipe else 'standard') %}
+  <div class="kindswitch" role="radiogroup" aria-label="Recipe type">
+    <label class="check"><input type="radio" name="kind" value="standard" {{ 'checked' if k != 'bread' }} data-kind> Regular recipe</label>
+    <label class="check"><input type="radio" name="kind" value="bread" {{ 'checked' if k == 'bread' }} data-kind> Bread with baker's percentages</label>
+  </div>
+  <label>Title <input name="title" required value="{{ src.title if src else '' }}"></label>
+  <label>Short description <textarea name="description" rows="2">{{ src.description if src else '' }}</textarea></label>
+  <div class="row">
+    <label class="kind-standard" {{ 'hidden' if k == 'bread' }}>Servings <input type="number" name="servings" min="1" value="{{ src.servings if src and src.servings else '' }}"></label>
+    <label>Prep (min) <input type="number" name="prep_minutes" min="0" value="{{ src.prep_minutes if src and src.prep_minutes is not none else '' }}"></label>
+    <label>Cook (min) <input type="number" name="cook_minutes" min="0" value="{{ src.cook_minutes if src and src.cook_minutes is not none else '' }}"></label>
+    <label>Rating <select name="rating"><option value="">–</option>{% for i in range(5,0,-1) %}<option value="{{ i }}" {{ 'selected' if recipe and recipe.rating == i }}>{{ '★' * i }}</option>{% endfor %}</select></label>
+  </div>
+  <div class="kind-bread" {{ 'hidden' if k != 'bread' }}>{% with bs = bread_spec or {} %}{% include "_bread_editor.html" %}{% endwith %}</div>
+  <div class="twocol">
+    <label class="kind-standard" {{ 'hidden' if k == 'bread' }}>Ingredients <small class="muted">one per line, e.g. “200 g flour”. End a line with “:” for a section.</small>
+      <textarea name="ingredients" rows="14">{% if recipe %}{{ recipe.ingredients }}{% elif draft %}{{ draft.ingredients|join('\n') }}{% endif %}</textarea></label>
+    <label>Method <small class="muted">one step per line</small>
+      <textarea name="instructions" rows="14">{% if recipe %}{{ recipe.instructions }}{% elif draft %}{{ draft.instructions|join('\n') }}{% endif %}</textarea></label>
+  </div>
+  <label>Notes <textarea name="notes" rows="3">{{ src.notes if src else '' }}</textarea></label>
+  <label>Tags <small class="muted">comma separated</small>
+    <input name="tags" value="{% if recipe %}{{ recipe.tags }}{% elif draft %}{{ draft.tags|join(', ') }}{% endif %}" placeholder="pasta, vegetarian, quick"></label>
+  <label>Source link <input name="source_url" type="url" value="{{ src.source_url if src else '' }}" placeholder="https://"></label>
+
+  <fieldset>
+    <legend>Photo</legend>
+    {% set img = recipe.image if recipe else image_existing %}
+    {% if img %}<img class="preview" src="/media/{{ img }}" alt="">{% endif %}
+    {% if image_existing %}<input type="hidden" name="image_existing" value="{{ image_existing }}">{% endif %}
+    <input type="file" name="image" accept="image/*">
+    {% if recipe and recipe.image %}<label class="check"><input type="checkbox" name="remove_image" value="1"> Remove photo</label>{% endif %}
+  </fieldset>
+
+  {% if cookbooks %}
+  <fieldset>
+    <legend>Cookbooks</legend>
+    <div class="checks">{% for c in cookbooks %}<label class="check"><input type="checkbox" name="cookbooks" value="{{ c.id }}" {{ 'checked' if c.id in selected_cookbooks }}> {{ c.name }}</label>{% endfor %}</div>
+  </fieldset>
+  {% endif %}
+
+  <div class="actions">
+    <button class="btn primary">Save recipe</button>
+    <a class="btn" href="{{ '/recipes/%d' % recipe.id if recipe else '/recipes' }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}
